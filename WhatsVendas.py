@@ -97,7 +97,7 @@ st.sidebar.header("Opções")
 # Escolha do método de classificação
 metodo_classificacao = st.sidebar.radio(
     "Escolha o método de classificação:",
-    ("modelo", "fallback")
+    ("modelo IA", "Regra de Mensagem")
 
 # Upload do arquivo
 uploaded_file = st.file_uploader("Faça upload do arquivo de conversa (.txt)", type="txt")
