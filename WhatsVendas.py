@@ -85,8 +85,22 @@ def processar_conversas(conteudo_txt):
                     continue
 
     df = pd.DataFrame(dados, columns=['Data', 'Emissor', 'Mensagem'])
-    # Converter a coluna de data explicitamente para datetime
-    df['Data'] = pd.to_datetime(df['Data'])
+    
+    # Conversão explícita para datetime com dayfirst=True
+    df['Data'] = pd.to_datetime(df['Data'], format="%d/%m/%Y %H:%M", dayfirst=True)
+
+    # Classificar mensagens
+    def classificar_mensagem(mensagem):
+        if metodo == "modelo":
+            try:
+                resultado = classificador(mensagem)
+                return resultado[0]['label']
+            except Exception:
+                st.warning("Erro no modelo. Usando fallback.")
+                return fallback_categorizar_mensagem(mensagem)
+        else:
+            return fallback_categorizar_mensagem(mensagem)
+    
     df['Categoria'] = df['Mensagem'].apply(categorizar_mensagem)
     return df
 
