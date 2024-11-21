@@ -2,83 +2,49 @@ import streamlit as st
 import pandas as pd
 from transformers import pipeline
 
-# Carregar o classificador em Português
+# Tente carregar um modelo já ajustado para classificação
 @st.cache_resource
 def carregar_classificador_pt():
-    return pipeline("text-classification", model="neuralmind/bert-base-portuguese-cased")
+    try:
+        return pipeline("text-classification", model="pierreguillou/bert-base-cased-sentiment")
+    except Exception as e:
+        st.error("Erro ao carregar o modelo ajustado. Usando fallback manual.")
+        return None
 
 classificador = carregar_classificador_pt()
 
-# Categorias Personalizadas
-categorias_personalizadas = [
-    "Erro_Endereço_Cadastro", "Erro_Nome_Cadastro", "Erro_Documento_Cadastro",
-    "Erro_Dados_Cadastro", "Erro_Pagamento_Boleto", "Erro_Pagamento_Crédito",
-    "Erro_Pagamento_Link", "Erro_Envio_Contrato", "Erro_Assinatura_Contrato",
-    "Erro_Acesso_NewConWeb", "Erro_Acesso_Plataforma", "Lentidão_Plataforma",
-    "Lentidão_NewCon", "Pedido_AumentoLimiteCreditoPV",
-    "Pedido_AumentoLimiteCreditoPessoa", "Pedido_AlteraçãoEmail",
-    "Pedido_AlteraçãoDados"
-]
-
-# Função para atribuir categorias
-def categorizar_mensagem(mensagem):
-    # Análise de texto com o modelo
-    resultado = classificador(mensagem)
+# Fallback: Regras simples
+def categorizar_mensagem_fallback(mensagem):
     texto = mensagem.lower()
-    
-    # Regras simples para identificar categorias
-    if "endereço" in texto and "cadastro" in texto:
-        return "Erro_Endereço_Cadastro"
-    elif "nome" in texto and "cadastro" in texto:
-        return "Erro_Nome_Cadastro"
-    elif "documento" in texto and "cadastro" in texto:
-        return "Erro_Documento_Cadastro"
-    elif "dados" in texto and "cadastro" in texto:
+    if "cadastro" in texto:
         return "Erro_Dados_Cadastro"
-    elif "boleto" in texto and "pagamento" in texto:
-        return "Erro_Pagamento_Boleto"
-    elif "crédito" in texto and "pagamento" in texto:
-        return "Erro_Pagamento_Crédito"
-    elif "link" in texto and "pagamento" in texto:
-        return "Erro_Pagamento_Link"
-    elif "envio" in texto and "contrato" in texto:
-        return "Erro_Envio_Contrato"
-    elif "assinatura" in texto and "contrato" in texto:
-        return "Erro_Assinatura_Contrato"
-    elif "acesso" in texto and "newconweb" in texto:
-        return "Erro_Acesso_NewConWeb"
-    elif "acesso" in texto and "plataforma" in texto:
-        return "Erro_Acesso_Plataforma"
-    elif "lentidão" in texto and "plataforma" in texto:
-        return "Lentidão_Plataforma"
-    elif "lentidão" in texto and "newcon" in texto:
-        return "Lentidão_NewCon"
-    elif "aumento" in texto and "limite" in texto and "pv" in texto:
-        return "Pedido_AumentoLimiteCreditoPV"
-    elif "aumento" in texto and "limite" in texto and "pessoa" in texto:
-        return "Pedido_AumentoLimiteCreditoPessoa"
-    elif "alteração" in texto and "email" in texto:
-        return "Pedido_AlteraçãoEmail"
-    elif "alteração" in texto and "dados" in texto:
-        return "Pedido_AlteraçãoDados"
+    elif "pagamento" in texto:
+        return "Erro_Pagamento"
     else:
         return "Outros"
 
-# Função para processar o arquivo de conversa
+# Processar mensagens com fallback
+def categorizar_mensagem(mensagem):
+    if classificador:
+        try:
+            resultado = classificador(mensagem)
+            return resultado[0]['label']
+        except Exception:
+            pass
+    return categorizar_mensagem_fallback(mensagem)
+
+# Função para processar arquivo de conversa
 def processar_conversas(conteudo_txt):
     linhas = conteudo_txt.decode("utf-8").split('\n')
-
     dados = []
     for linha in linhas:
-        if ' - ' in linha:  # Exemplo: "20/11/2024 11:55 - João: Mensagem"
+        if ' - ' in linha:
             parte_data, parte_msg = linha.split(' - ', 1)
             if ': ' in parte_msg:
                 emissor, mensagem = parte_msg.split(': ', 1)
                 dados.append([parte_data, emissor, mensagem])
 
     df = pd.DataFrame(dados, columns=['Data', 'Emissor', 'Mensagem'])
-
-    # Classificar mensagens usando regras e modelo
     df['Categoria'] = df['Mensagem'].apply(categorizar_mensagem)
     return df
 
@@ -109,4 +75,5 @@ if uploaded_file is not None:
     st.write("Número de Incidentes por Categoria")
     grafico_categorias = df_conversas['Categoria'].value_counts()
     st.bar_chart(grafico_categorias)
+
 
