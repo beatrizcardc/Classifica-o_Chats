@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 @st.cache_resource
 def carregar_classificador_pt():
     try:
-        return pipeline("text-classification", model="pierreguillou/bert-base-cased-sentiment")
+        return pipeline("text-classification", model=""neuralmind/bert-base-portuguese-cased"")
     except Exception as e:
         st.error("Erro ao carregar o modelo ajustado. Usando fallback manual.")
         return None
