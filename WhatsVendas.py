@@ -74,7 +74,12 @@ def processar_conversas(conteudo_txt):
             parte_data, parte_msg = linha.split(' - ', 1)
             if ': ' in parte_msg:
                 emissor, mensagem = parte_msg.split(': ', 1)
-                dados.append([parte_data, emissor, mensagem])
+                try:
+                    # Converter data para formato datetime
+                    data = datetime.strptime(parte_data, "%d/%m/%Y %H:%M")
+                    dados.append([parte_data, emissor, mensagem])
+                except ValueError:
+                    continue
 
     df = pd.DataFrame(dados, columns=['Data', 'Emissor', 'Mensagem'])
     df['Categoria'] = df['Mensagem'].apply(categorizar_mensagem)
@@ -89,6 +94,23 @@ uploaded_file = st.file_uploader("Faça upload do arquivo de conversa (.txt)", t
 if uploaded_file is not None:
     st.write("Processando arquivo...")
     df_conversas = processar_conversas(uploaded_file.read())
+
+    # Seleção de período de data
+    min_data = df_conversas['Data'].min()
+    max_data = df_conversas['Data'].max()
+
+    st.sidebar.write("Selecione o período de data:")
+    data_inicial = st.sidebar.date_input("Data Inicial", min_data.date())
+    data_final = st.sidebar.date_input("Data Final", max_data.date())
+
+    if data_inicial > data_final:
+        st.sidebar.error("A data inicial não pode ser maior que a data final.")
+    else:
+        df_conversas = df_conversas[(df_conversas['Data'] >= datetime.combine(data_inicial, datetime.min.time())) &
+                                    (df_conversas['Data'] <= datetime.combine(data_final, datetime.max.time()))]
+
+
+    
 
     # Filtros no menu lateral
     categorias = st.sidebar.multiselect("Selecione as categorias", df_conversas['Categoria'].unique())
