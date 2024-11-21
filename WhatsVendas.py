@@ -53,6 +53,8 @@ def categorizar_mensagem_fallback(mensagem):
         return "Pedido_AlteraçãoEmail"
     elif "alteração" in texto and "dados" in texto:
         return "Pedido_AlteraçãoDados"
+    elif "liberar" in texto and "plano de vendas" in texto:
+        return "Pedido_LiberarPlanoVenda"
     else:
         return "Outros"
 
