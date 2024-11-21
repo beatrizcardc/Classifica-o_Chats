@@ -111,8 +111,8 @@ if uploaded_file is not None:
     if data_inicial > data_final:
         st.sidebar.error("A data inicial não pode ser maior que a data final.")
     else:
-        df_conversas = df_conversas[(df_conversas['Data'] >= datetime.combine(data_inicial, datetime.min.time())) &
-                                    (df_conversas['Data'] <= datetime.combine(data_final, datetime.max.time()))]
+        df_conversas = df_conversas[(df_conversas['Data'] >= pd.Timestamp(data_inicial)) &
+                                    (df_conversas['Data'] <= pd.Timestamp(data_final))]
 
 
     
