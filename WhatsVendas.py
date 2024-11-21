@@ -83,6 +83,8 @@ def processar_conversas(conteudo_txt):
                     continue
 
     df = pd.DataFrame(dados, columns=['Data', 'Emissor', 'Mensagem'])
+    # Converter a coluna de data explicitamente para datetime
+    df['Data'] = pd.to_datetime(df['Data'])
     df['Categoria'] = df['Mensagem'].apply(categorizar_mensagem)
     return df
 
