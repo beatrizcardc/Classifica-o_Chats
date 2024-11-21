@@ -13,13 +13,45 @@ def carregar_classificador_pt():
 
 classificador = carregar_classificador_pt()
 
+ 
+
 # Fallback: Regras simples
 def categorizar_mensagem_fallback(mensagem):
     texto = mensagem.lower()
-    if "cadastro" in texto:
+    if "endereço" in texto and "cadastro" in texto:
+        return "Erro_Endereço_Cadastro"
+    elif "nome" in texto and "cadastro" in texto:
+        return "Erro_Nome_Cadastro"
+    elif "documento" in texto and "cadastro" in texto:
+        return "Erro_Documento_Cadastro"
+    elif "dados" in texto and "cadastro" in texto:
         return "Erro_Dados_Cadastro"
-    elif "pagamento" in texto:
-        return "Erro_Pagamento"
+    elif "boleto" in texto and "pagamento" in texto:
+        return "Erro_Pagamento_Boleto"
+    elif "crédito" in texto and "pagamento" in texto:
+        return "Erro_Pagamento_Crédito"
+    elif "link" in texto and "pagamento" in texto:
+        return "Erro_Pagamento_Link"
+    elif "envio" in texto and "contrato" in texto:
+        return "Erro_Envio_Contrato"
+    elif "assinatura" in texto and "contrato" in texto:
+        return "Erro_Assinatura_Contrato"
+    elif "acesso" in texto and "newconweb" in texto:
+        return "Erro_Acesso_NewConWeb"
+    elif "acesso" in texto and "plataforma" in texto:
+        return "Erro_Acesso_Plataforma"
+    elif "lentidão" in texto and "plataforma" in texto:
+        return "Lentidão_Plataforma"
+    elif "lentidão" in texto and "newcon" in texto:
+        return "Lentidão_NewCon"
+    elif "aumento" in texto and "limite" in texto and "pv" in texto:
+        return "Pedido_AumentoLimiteCreditoPV"
+    elif "aumento" in texto and "limite" in texto and "pessoa" in texto:
+        return "Pedido_AumentoLimiteCreditoPessoa"
+    elif "alteração" in texto and "email" in texto:
+        return "Pedido_AlteraçãoEmail"
+    elif "alteração" in texto and "dados" in texto:
+        return "Pedido_AlteraçãoDados"
     else:
         return "Outros"
 
