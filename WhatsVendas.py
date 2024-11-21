@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from transformers import pipeline
+from datetime import datetime, timedelta
 
 # Tente carregar um modelo já ajustado para classificação
 @st.cache_resource
