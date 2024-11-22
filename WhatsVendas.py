@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from transformers import pipeline
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # Tente carregar um modelo já ajustado para classificação
 @st.cache_resource
@@ -9,12 +9,10 @@ def carregar_classificador_pt():
     try:
         return pipeline("text-classification", model="neuralmind/bert-base-portuguese-cased")
     except Exception as e:
-        st.error("Erro ao carregar o modelo ajustado. Usando fallback manual.")
+        st.error("Erro ao carregar o modelo ajustado. Certifique-se de que o modelo está acessível.")
         return None
 
 classificador = carregar_classificador_pt()
-
- 
 
 # Fallback: Regras simples
 def categorizar_mensagem_fallback(mensagem):
@@ -58,18 +56,24 @@ def categorizar_mensagem_fallback(mensagem):
     else:
         return "Outros"
 
-# Processar mensagens com fallback
-def categorizar_mensagem(mensagem):
-    if classificador:
-        try:
-            resultado = classificador(mensagem)
-            return resultado[0]['label']
-        except Exception:
-            pass
-    return categorizar_mensagem_fallback(mensagem)
+# Categorização baseada na escolha do método
+def categorizar_mensagem(mensagem, metodo):
+    if metodo == "modelo IA":
+        if classificador:
+            try:
+                resultado = classificador(mensagem)
+                return resultado[0]['label']
+            except Exception:
+                st.warning("Erro ao usar o modelo de IA. Retornando 'Outros'.")
+                return "Outros"
+        else:
+            st.warning("Modelo de IA não carregado. Usando 'Outros'.")
+            return "Outros"
+    else:  # Fallback por regra de mensagem
+        return categorizar_mensagem_fallback(mensagem)
 
 # Função para processar arquivo de conversa
-def processar_conversas(conteudo_txt):
+def processar_conversas(conteudo_txt, metodo):
     linhas = conteudo_txt.decode("utf-8").split('\n')
     dados = []
     for linha in linhas:
@@ -80,28 +84,14 @@ def processar_conversas(conteudo_txt):
                 try:
                     # Converter data para formato datetime
                     data = datetime.strptime(parte_data, "%d/%m/%Y %H:%M")
-                    dados.append([parte_data, emissor, mensagem])
+                    dados.append([data, emissor, mensagem])
                 except ValueError:
                     continue
 
     df = pd.DataFrame(dados, columns=['Data', 'Emissor', 'Mensagem'])
-    
-    # Conversão explícita para datetime com dayfirst=True
-    df['Data'] = pd.to_datetime(df['Data'], format="%d/%m/%Y %H:%M", dayfirst=True)
 
-    # Classificar mensagens
-    def classificar_mensagem(mensagem):
-        if metodo == "modelo":
-            try:
-                resultado = classificador(mensagem)
-                return resultado[0]['label']
-            except Exception:
-                st.warning("Erro no modelo. Usando fallback.")
-                return fallback_categorizar_mensagem(mensagem)
-        else:
-            return fallback_categorizar_mensagem(mensagem)
-    
-    df['Categoria'] = df['Mensagem'].apply(categorizar_mensagem)
+    # Classificar mensagens com o método escolhido
+    df['Categoria'] = df['Mensagem'].apply(lambda x: categorizar_mensagem(x, metodo))
     return df
 
 # Interface do Streamlit
@@ -111,13 +101,14 @@ st.sidebar.header("Opções")
 # Escolha do método de classificação
 metodo_classificacao = st.sidebar.radio(
     "Escolha o método de classificação:",
-    ("modelo IA", "Regra de Mensagem"))
+    ("modelo IA", "Regra de Mensagem")
+)
 
 # Upload do arquivo
 uploaded_file = st.file_uploader("Faça upload do arquivo de conversa (.txt)", type="txt")
 if uploaded_file is not None:
     st.write("Processando arquivo...")
-    df_conversas = processar_conversas(uploaded_file.read())
+    df_conversas = processar_conversas(uploaded_file.read(), metodo_classificacao)
 
     # Seleção de período de data
     min_data = df_conversas['Data'].min()
@@ -133,9 +124,6 @@ if uploaded_file is not None:
         df_conversas = df_conversas[(df_conversas['Data'] >= pd.Timestamp(data_inicial)) &
                                     (df_conversas['Data'] <= pd.Timestamp(data_final))]
 
-
-    
-
     # Filtros no menu lateral
     categorias = st.sidebar.multiselect("Selecione as categorias", df_conversas['Categoria'].unique())
     emissores = st.sidebar.multiselect("Selecione os emissores", df_conversas['Emissor'].unique())
@@ -149,6 +137,11 @@ if uploaded_file is not None:
     # Exibir tabela e gráficos
     st.write("Conversas Categorizadas")
     st.dataframe(df_conversas)
+
+    st.write("Número de Incidentes por Categoria")
+    grafico_categorias = df_conversas['Categoria'].value_counts()
+    st.bar_chart(grafico_categorias)
+
 
     st.write("Número de Incidentes por Categoria")
     grafico_categorias = df_conversas['Categoria'].value_counts()
